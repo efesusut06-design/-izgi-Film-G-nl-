@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çizgi Film Gizem Günlüğü</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Kalam:wght@400;700&family=Pirata+One&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #1a0f07;
+            --paper-color: #f4e4bc;
+            --paper-dark: #e0cca0;
+            --ink-color: #2b1d0c;
+            --accent-gold: #d4af37;
+            --uv-color: #00ffff;
+            --uv-glow: rgba(0, 255, 255, 0.6);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#2c1a0e 1px, transparent 0);
+            background-size: 24px 24px;
+            font-family: 'Kalam', cursive;
+            color: var(--ink-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            padding: 20px 10px;
+        }
+
+        /* Top Bar Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            z-index: 100;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            background: #3a2212;
+            color: #d4af37;
+            border: 2px solid #d4af37;
+            padding: 10px 18px;
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 6px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: #54331b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.7);
+        }
+
+        .btn-uv.active {
+            background: #4a0e4e;
+            color: #00ffff;
+            border-color: #00ffff;
+            box-shadow: 0 0 15px #00ffff;
+            animation: pulse-uv 2s infinite;
+        }
+
+        @keyframes pulse-uv {
+            0% { box-shadow: 0 0 10px #00ffff; }
+            50% { box-shadow: 0 0 20px #00ffff, 0 0 30px #9d00ff; }
+            100% { box-shadow: 0 0 10px #00ffff; }
+        }
+
+        /* 3D Book Layout */
+        .book-container {
+            perspective: 2000px;
+            width: 100%;
+            max-width: 900px;
+            height: 600px;
+            position: relative;
+        }
+
+        .book {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+        }
+
+        /* Individual Page */
+        .page {
+            position: absolute;
+            width: 50%;
+            height: 100%;
+            top: 0;
+            right: 0;
+            transform-origin: left center;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+            cursor: pointer;
+            border-radius: 0 15px 15px 0;
+            box-shadow: inset 20px 0 30px rgba(0,0,0,0.2), 5px 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .page-front, .page-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            backface-visibility: hidden;
+            background-color: var(--paper-color);
+            background-image: radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 0);
+            background-size: 16px 16px;
+            padding: 30px;
+            overflow-y: auto;
+            border: 1px solid #c8b488;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .page-front {
+            border-radius: 0 15px 15px 0;
+        }
+
+        .page-back {
+            transform: rotateY(180deg);
+            border-radius: 15px 0 0 15px;
+            box-shadow: inset -20px 0 30px rgba(0,0,0,0.2);
+        }
+
+        /* Page Stacking & States */
+        .page.flipped {
+            transform: rotateY(-180deg);
+        }
+
+        /* Z-Index logic for 3D Book */
+        #p1 { z-index: 6; }
+        #p2 { z-index: 5; }
+        #p3 { z-index: 4; }
+        #p4 { z-index: 3; }
+        #p5 { z-index: 2; }
+        #p6 { z-index: 1; }
+
+        #p1.flipped { z-index: 1; }
+        #p2.flipped { z-index: 2; }
+        #p3.flipped { z-index: 3; }
+        #p4.flipped { z-index: 4; }
+        #p5.flipped { z-index: 5; }
+        #p6.flipped { z-index: 6; }
+
+        /* Book Cover Details */
+        .cover-front {
+            background: linear-gradient(135deg, #4a2810 0%, #2b1405 100%);
+            border: 4px solid #d4af37;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #d4af37;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        .hand-print {
+            width: 140px;
+            height: 140px;
+            background: #d4af37;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Pirata One', cursive;
+            font-size: 70px;
+            color: #2b1405;
+            margin: 20px 0;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Page Content Styling */
+        h2 {
+            font-family: 'Pirata One', cursive;
+            font-size: 28px;
+            color: #5c1d11;
+            border-bottom: 2px dashed #8c6d46;
+            padding-bottom: 5px;
+            margin-bottom: 12px;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .uv-text {
+            color: transparent;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        body.uv-mode .uv-text {
+            color: var(--uv-color);
+            text-shadow: 0 0 8px var(--uv-color);
+        }
+
+        /* Custom Widgets inside pages */
+        .widget-box {
+            background: rgba(0,0,0,0.05);
+            border: 1px solid #a89268;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        /* Interactive Elements */
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(255,255,255,0.6);
+            border: 1px solid #8c6d46;
+            font-family: 'Kalam', cursive;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+
+        .interactive-btn {
+            background: #8c6d46;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            font-family: 'Kalam', cursive;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+
+        .interactive-btn:hover {
+            background: #5c1d11;
+        }
+
+        /* Jake Morph Box */
+        #jake-box {
+            width: 80px;
+            height: 80px;
+            background: #ffcd00;
+            border-radius: 20px;
+            margin: 10px auto;
+            transition: all 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        /* Omnitrix Dial */
+        .omnitrix {
+            width: 90px;
+            height: 90px;
+            background: #222;
+            border: 6px solid #00ff00;
+            border-radius: 50%;
+            margin: 10px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 15px #00ff00;
+            transition: transform 0.3s;
+        }
+
+        .omnitrix:active {
+            transform: scale(0.95) rotate(45deg);
+        }
+
+        .omnitrix-symbol {
+            width: 0;
+            height: 0;
+            border-left: 25px solid transparent;
+            border-right: 25px solid transparent;
+            border-bottom: 40px solid #00ff00;
+            position: relative;
+        }
+
+        .omnitrix-symbol::after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: -25px;
+            width: 0;
+            height: 0;
+            border-left: 25px solid transparent;
+            border-right: 25px solid transparent;
+            border-top: 40px solid #00ff00;
+        }
+
+        .page-number {
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #7a6243;
+        }
+
+        /* Navigation Buttons */
+        .nav-controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 20px;
+        }
+
+        /* Responsive Mobile Adjustment */
+        @media (max-width: 768px) {
+            .book-container {
+                height: 500px;
+            }
+            .page-front, .page-back {
+                padding: 15px;
+            }
+            h2 {
+                font-size: 20px;
+            }
+            p {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <button class="btn btn-uv" id="uv-btn" onclick="toggleUV()">
+            🔦 UV Siyah Işık Modu
+        </button>
+    </div>
+
+    <div class="book-container">
+        <div class="book" id="book">
+
+            <!-- PAGE 1: COVER -->
+            <div class="page" id="p1">
+                <div class="page-front cover-front">
+                    <h1 style="font-family: 'Pirata One'; font-size: 36px;">GİZEMLİ GÜNLÜK</h1>
+                    <div class="hand-print">3</div>
+                    <p style="color: #d4af37;">Çizgi Film Evrenleri Rehberi</p>
+                    <small style="margin-top: 20px; opacity: 0.8;">(Başlamak için kapağa tıkla)</small>
+                </div>
+                <div class="page-back">
+                    <h2>🌲 Esrarengiz Kasaba</h2>
+                    <p>Kasabada tuhaf şeyler oluyor. Ağaçların dili var ve göl canavarı her Salı çay içiyor.</p>
+                    
+                    <div class="widget-box">
+                        <strong>Sezar Şifre Çözücü:</strong>
+                        <input type="text" id="cipher-input" placeholder="Şifreli metin (örn: WUDY)" oninput="decodeCipher()">
+                        <p style="margin-top: 5px; color: #5c1d11;">Çözüm: <span id="cipher-output" style="font-weight: bold;">-</span></p>
+                    </div>
+
+                    <p class="uv-text">GİZLİ NOT: Bill Cipher her zaman izliyor. A=B, B=C kaydırmasını kullan!</p>
+                    <div class="page-number">1</div>
+                </div>
+            </div>
+
+            <!-- PAGE 2: ADVENTURE TIME -->
+            <div class="page" id="p2">
+                <div class="page-front">
+                    <h2>🗡️ Macera Zamanı (Ooo Diyarı)</h2>
+                    <p>Enchiridion kahramanlık kitabından alınan son notlar:</p>
+                    
+                    <div class="widget-box" style="text-align: center;">
+                        <strong>Jake Şekil Değiştirici</strong>
+                        <div id="jake-box" onclick="morphJake()">Tıkla!</div>
+                        <small>Jake'i esnetmek için dokun</small>
+                    </div>
+
+                    <p class="uv-text">GİZLİ NOT: Buz Kralı'nın tacı arkasındaki büyülü sistem 2. boyutta saklı.</p>
+                    <div class="page-number">2</div>
+                </div>
+                <div class="page-back">
+                    <h2>☕ Sürekli Dizi (Park)</h2>
+                    <p>Mordecai ve Rigby yine mesai saatinde uzay portalı açtı. Benson patlamak üzere!</p>
+
+                    <div class="widget-box">
+                        <strong>Benson'ın Öfke Metresi:</strong>
+                        <input type="range" min="1" max="100" value="20" oninput="updateBenson(this.value)">
+                        <p id="benson-status" style="font-weight: bold; color: green; margin-top: 5px;">Durum: Sakin</p>
+                    </div>
+
+                    <p class="uv-text">GİZLİ NOT: Saat 4'e kadar çöpü dökmezlerse ev uzaya ışınlanacak.</p>
+                    <div class="page-number">3</div>
+                </div>
+            </div>
+
+            <!-- PAGE 3: GUMBALL & BEN 10 -->
+            <div class="page" id="p3">
+                <div class="page-front">
+                    <h2>🐱 Gumball (Elmore)</h2>
+                    <p>Elmore Jr. High'da sıradan bir gün asla yaşanmaz. Gerçeklik dokusu her an yırtılabilir.</p>
+
+                    <div class="widget-box">
+                        <strong>Anais Kaos Sayacı:</strong>
+                        <p id="chaos-counter" style="font-size: 20px; font-weight: bold; color: #5c1d11;">Kaos Seviyesi: %12</p>
+                        <button class="interactive-btn" onclick="increaseChaos()">Kaosu Arttır!</button>
+                    </div>
+
+                    <p class="uv-text">GİZLİ NOT: Nefret Ettiğimiz Şeyler listesinde Boşluk (Void) gizli.</p>
+                    <div class="page-number">4</div>
+                </div>
+                <div class="page-back">
+                    <h2>⌚ Ben 10 (Omnitrix)</h2>
+                    <p>Uzaylı DNA veritabanı aktif. Dönüşüm için kadrana dokun!</p>
+
+                    <div class="widget-box" style="text-align: center;">
+                        <div class="omnitrix" onclick="rotateOmnitrix()">
+                            <div class="omnitrix-symbol"></div>
+                        </div>
+                        <p id="alien-name" style="font-weight: bold; color: #00aa00; margin-top: 5px;">Seçili: İnsan</p>
+                    </div>
+
+                    <p class="uv-text">GİZLİ NOT: Azmuth Omnitrix'e gizli kendi kendini imha kodu koydu.</p>
+                    <div class="page-number">5</div>
+                </div>
+            </div>
+
+            <!-- PAGE 4: OVER THE GARDEN WALL & MY NOTES -->
+            <div class="page" id="p4">
+                <div class="page-front">
+                    <h2>Lantern 🕯️ Bahçe Duvarının Ötesinde</h2>
+                    <p>Meçhul ormanında fenerin ışığını asla söndürme. Canavar gölgelerin arasında bekliyor...</p>
+
+                    <div class="widget-box">
+                        <button class="interactive-btn" style="width: 100%;" onclick="toggleBeast()">Feneri Kapat / Aç</button>
+                        <p id="beast-warning" style="display:none; color: red; font-weight: bold; margin-top: 5px;">⚠️ CANAVAR SENİ İZLİYOR! 👁️</p>
+                    </div>
+
+                    <p class="uv-text">GİZLİ NOT: Edelwood ağaçları aslında kaybolan ruhlar...</p>
+                    <div class="page-number">6</div>
+                </div>
+                <div class="page-back">
+                    <h2>✍️ Kendi Teori Sayfan</h2>
+                    <p>Bu günlüğün kalanını kendi keşiflerinle doldur:</p>
+
+                    <textarea id="my-notes" rows="6" placeholder="Buruya kendi teorilerini yaz... (Otomatik kaydedilir)" oninput="saveNotes()"></textarea>
+
+                    <p class="uv-text">GİZLİ NOT: Sen de artık bu gizemli günlüğün yazarısın!</p>
+                    <div class="page-number">7</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="nav-controls">
+        <button class="btn" onclick="prevPage()">⬅️ Önceki Sayfa</button>
+        <button class="btn" onclick="nextPage()">Sonraki Sayfa ➡️</button>
+    </div>
+
+    <script>
+        let currentPage = 0;
+        const totalPages = 4;
+        const pages = [
+            document.getElementById('p1'),
+            document.getElementById('p2'),
+            document.getElementById('p3'),
+            document.getElementById('p4')
+        ];
+
+        // Web Audio API Sound Generator for Page Flip
+        function playFlipSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const bufferSize = audioCtx.sampleRate * 0.15; // 150ms
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, audioCtx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.15);
+
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                noise.start();
+            } catch(e) {
+                console.log("Audio not allowed without interaction");
+            }
+        }
+
+        // Page Navigation
+        function nextPage() {
+            if (currentPage < totalPages) {
+                playFlipSound();
+                pages[currentPage].classList.add('flipped');
+                currentPage++;
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 0) {
+                playFlipSound();
+                currentPage--;
+                pages[currentPage].classList.remove('flipped');
+            }
+        }
+
+        // Page Click Event
+        pages.forEach((page, index) => {
+            page.addEventListener('click', (e) => {
+                // Prevent page flip when clicking inside inputs or interactive widgets
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON' || e.target.classList.contains('omnitrix') || e.target.id === 'jake-box') {
+                    return;
+                }
+                
+                if (index === currentPage) {
+                    nextPage();
+                } else if (index === currentPage - 1) {
+                    prevPage();
+                }
+            });
+        });
+
+        // UV Mode Toggle
+        function toggleUV() {
+            document.body.classList.toggle('uv-mode');
+            document.getElementById('uv-btn').classList.toggle('active');
+        }
+
+        // Cipher Decoder (Caesar Cipher -3)
+        function decodeCipher() {
+            const input = document.getElementById('cipher-input').value.toUpperCase();
+            let output = '';
+            for (let i = 0; i < input.length; i++) {
+                let code = input.charCodeAt(i);
+                if (code >= 65 && code <= 90) {
+                    code = ((code - 65 - 3 + 26) % 26) + 65;
+                    output += String.fromCharCode(code);
+                } else {
+                    output += input[i];
+                }
+            }
+            document.getElementById('cipher-output').innerText = output || '-';
+        }
+
+        // Jake Morph
+        const jakeShapes = [
+            { w: '80px', h: '80px', radius: '20px', text: 'Tıkla!' },
+            { w: '140px', h: '40px', radius: '10px', text: 'Uzun!' },
+            { w: '60px', h: '120px', radius: '30px', text: 'Yüksek!' },
+            { w: '110px', h: '110px', radius: '50%', text: 'Tombul!' }
+        ];
+        let jakeIndex = 0;
+        function morphJake() {
+            jakeIndex = (jakeIndex + 1) % jakeShapes.length;
+            const box = document.getElementById('jake-box');
+            box.style.width = jakeShapes[jakeIndex].w;
+            box.style.height = jakeShapes[jakeIndex].h;
+            box.style.borderRadius = jakeShapes[jakeIndex].radius;
+            box.innerText = jakeShapes[jakeIndex].text;
+        }
+
+        // Benson Rage Slider
+        function updateBenson(val) {
+            const status = document.getElementById('benson-status');
+            if (val < 40) {
+                status.innerText = 'Durum: Sakin';
+                status.style.color = 'green';
+            } else if (val < 75) {
+                status.innerText = 'Durum: Sinirli (Kovulacaksınız!)';
+                status.style.color = 'orange';
+            } else {
+                status.innerText = 'Durum: PATLAMAYA HAZIR! 🔥';
+                status.style.color = 'red';
+            }
+        }
+
+        // Chaos Counter
+        let chaosVal = 12;
+        function increaseChaos() {
+            chaosVal += Math.floor(Math.random() * 20) + 5;
+            if (chaosVal > 100) chaosVal = 100;
+            document.getElementById('chaos-counter').innerText = `Kaos Seviyesi: %${chaosVal}`;
+        }
+
+        // Omnitrix Selector
+        const aliens = ['Ateş Topu 🔥', 'Yıldırım Gülle ⚡', 'Dört Kol 🥊', 'İnsanazor 🦖', 'Elmas Kafalı 💎'];
+        let alienIndex = 0;
+        function rotateOmnitrix() {
+            alienIndex = (alienIndex + 1) % aliens.length;
+            document.getElementById('alien-name').innerText = `Seçili: ${aliens[alienIndex]}`;
+        }
+
+        // Over the Garden Wall Beast
+        function toggleBeast() {
+            const warning = document.getElementById('beast-warning');
+            if (warning.style.display === 'none') {
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+
+        // Local Storage for User Notes
+        function saveNotes() {
+            const notes = document.getElementById('my-notes').value;
+            localStorage.setItem('cartoon_journal_notes', notes);
+        }
+
+        // Load saved notes
+        window.onload = () => {
+            const savedNotes = localStorage.getItem('cartoon_journal_notes');
+            if (savedNotes) {
+                document.getElementById('my-notes').value = savedNotes;
+            }
+        };
+    </script>
+</body>
+</html>
